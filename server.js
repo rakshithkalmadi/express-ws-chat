@@ -28,6 +28,9 @@ wss.on('connection', (ws) => {
                     }
                 });
                 break;
+            case 'echo':
+                ws.send(JSON.stringify(payload));
+                break;
         }
     });
 
