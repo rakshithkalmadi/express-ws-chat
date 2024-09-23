@@ -41,7 +41,10 @@ function setupPeerConnection() {
     peerConnection = new RTCPeerConnection();
     dataChannel = peerConnection.createDataChannel('chat');
 
-    dataChannel.onopen = () => console.log('Data channel is open');
+    dataChannel.onopen = () => {
+        console.log('Data channel is open');
+        sendButton.disabled = false; // Enable the send button
+    };
     dataChannel.onmessage = (event) => displayMessage(`Peer: ${event.data}`);
 
     peerConnection.onicecandidate = (event) => {
@@ -56,8 +59,23 @@ function setupPeerConnection() {
     });
 }
 
+// Initially disable the send button
+sendButton.disabled = true;
+
 function displayMessage(message) {
     const messageElement = document.createElement('div');
     messageElement.textContent = message;
     messagesDiv.appendChild(messageElement);
 }
+
+signalingServer.onopen = () => {
+    console.log('WebSocket connection opened');
+};
+
+signalingServer.onclose = () => {
+    console.log('WebSocket connection closed');
+};
+
+signalingServer.onerror = (error) => {
+    console.error('WebSocket error:', error);
+};
