@@ -10,6 +10,9 @@ let room;
 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const signalingServer = new WebSocket(`${protocol}//${window.location.host}`);
 
+let isWebSocketOpen = false;
+let isDataChannelOpen = false;
+
 joinButton.addEventListener('click', () => {
     room = roomInput.value;
     signalingServer.send(JSON.stringify({ type: 'join', room }));
@@ -18,9 +21,29 @@ joinButton.addEventListener('click', () => {
 
 sendButton.addEventListener('click', () => {
     const message = messageInput.value;
-    dataChannel.send(message);
-    displayMessage(`You: ${message}`);
+    if (isDataChannelOpen) {
+        dataChannel.send(message);
+        displayMessage(`You: ${message}`);
+    } else {
+        console.error('Data channel is not open');
+    }
 });
+
+signalingServer.onopen = () => {
+    console.log('WebSocket connection opened');
+    isWebSocketOpen = true;
+    checkReadyState();
+};
+
+signalingServer.onclose = () => {
+    console.log('WebSocket connection closed');
+    isWebSocketOpen = false;
+    sendButton.disabled = true;
+};
+
+signalingServer.onerror = (error) => {
+    console.error('WebSocket error:', error);
+};
 
 signalingServer.onmessage = (message) => {
     const data = JSON.parse(message.data);
@@ -43,8 +66,10 @@ function setupPeerConnection() {
 
     dataChannel.onopen = () => {
         console.log('Data channel is open');
-        sendButton.disabled = false; // Enable the send button
+        isDataChannelOpen = true;
+        checkReadyState();
     };
+
     dataChannel.onmessage = (event) => displayMessage(`Peer: ${event.data}`);
 
     peerConnection.onicecandidate = (event) => {
@@ -59,8 +84,11 @@ function setupPeerConnection() {
     });
 }
 
-// Initially disable the send button
-sendButton.disabled = true;
+function checkReadyState() {
+    if (isWebSocketOpen && isDataChannelOpen) {
+        sendButton.disabled = false;
+    }
+}
 
 function displayMessage(message) {
     const messageElement = document.createElement('div');
@@ -68,14 +96,5 @@ function displayMessage(message) {
     messagesDiv.appendChild(messageElement);
 }
 
-signalingServer.onopen = () => {
-    console.log('WebSocket connection opened');
-};
-
-signalingServer.onclose = () => {
-    console.log('WebSocket connection closed');
-};
-
-signalingServer.onerror = (error) => {
-    console.error('WebSocket error:', error);
-};
+// Initially disable the send button
+sendButton.disabled = true;
