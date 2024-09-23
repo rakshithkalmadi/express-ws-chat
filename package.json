@@ -1,0 +1,16 @@
+{
+    "name": "chat-app",
+    "version": "1.0.0",
+    "description": "A simple chat application using WebRTC and WebSocket",
+    "main": "server.js",
+    "scripts": {
+      "start": "node server.js"
+    },
+    "dependencies": {
+      "express": "^4.17.1",
+      "ws": "^8.2.3"
+    },
+    "author": "",
+    "license": "ISC"
+  }
+  
