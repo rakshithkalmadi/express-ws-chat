@@ -40,6 +40,13 @@
         function sendMessage() {
             const input = document.getElementById('messageInput');
             const message = input.value;
+
+            // Display the sent message
+            const messagesDiv = document.getElementById('messages');
+            const sentMessage = document.createElement('div');
+            sentMessage.textContent = `You: ${message}`;
+            messagesDiv.appendChild(sentMessage);
+
             ws.send(message);
             input.value = '';
         }
