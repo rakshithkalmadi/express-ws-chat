@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat</title>
+</head>
+<body>
+    <h1>WebSocket Chat</h1>
+    <div id="chat">
+        <div id="messages"></div>
+        <input type="text" id="messageInput" placeholder="Type a message...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        const ws = new WebSocket('wss://express-ws-chat.onrender.com');
+
+        ws.onopen = () => {
+            console.log('Connected to the server');
+        };
+
+        ws.onmessage = (event) => {
+            const messagesDiv = document.getElementById('messages');
+            const message = document.createElement('div');
+
+            // Convert Blob to text
+            const reader = new FileReader();
+            reader.onload = () => {
+                message.textContent = reader.result;
+                messagesDiv.appendChild(message);
+            };
+            reader.readAsText(event.data);
+        };
+
+        ws.onclose = () => {
+            console.log('Disconnected from the server');
+        };
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value;
+
+            // Display the sent message
+            const messagesDiv = document.getElementById('messages');
+            const sentMessage = document.createElement('div');
+            sentMessage.textContent = `You: ${message}`;
+            messagesDiv.appendChild(sentMessage);
+
+            ws.send(message);
+            input.value = '';
+        }
+    </script>
+</body>
+</html>
