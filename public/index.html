@@ -3,17 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat App</title>
+    <title>WebSocket Chat</title>
 </head>
 <body>
-    <h1>Chat Room</h1>
-    <input type="text" id="room" placeholder="Enter room name">
-    <button id="join">Join Room</button>
+    <h1>WebSocket Chat</h1>
     <div id="chat">
-        <input type="text" id="message" placeholder="Enter message">
-        <button id="send">Send</button>
         <div id="messages"></div>
+        <input type="text" id="messageInput" placeholder="Type a message...">
+        <button onclick="sendMessage()">Send</button>
     </div>
-    <script src="app.js"></script>
+
+    <script>
+        const ws = new WebSocket('wss://express-ws-chat.onrender.com');
+
+        ws.onopen = () => {
+            console.log('Connected to the server');
+        };
+
+        ws.onmessage = (event) => {
+            const messagesDiv = document.getElementById('messages');
+            const message = document.createElement('div');
+
+            // Convert Blob to text
+            const reader = new FileReader();
+            reader.onload = () => {
+                message.textContent = reader.result;
+                messagesDiv.appendChild(message);
+            };
+            reader.readAsText(event.data);
+        };
+
+        ws.onclose = () => {
+            console.log('Disconnected from the server');
+        };
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value;
+            ws.send(message);
+            input.value = '';
+        }
+    </script>
 </body>
 </html>
