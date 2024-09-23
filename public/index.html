@@ -7,48 +7,79 @@
 </head>
 <body>
     <h1>WebSocket Chat</h1>
-    <div id="chat">
+    <div id="login">
+        <input type="text" id="username" placeholder="Enter your name">
+        <input type="text" id="room" placeholder="Enter room name">
+        <button onclick="joinRoom()">Join Room</button>
+    </div>
+    <div id="chat" style="display:none;">
+        <h2 id="roomName"></h2>
         <div id="messages"></div>
         <input type="text" id="messageInput" placeholder="Type a message...">
         <button onclick="sendMessage()">Send</button>
     </div>
 
     <script>
-        const ws = new WebSocket('wss://express-ws-chat.onrender.com');
+        let ws;
+        let username, room;
 
-        ws.onopen = () => {
-            console.log('Connected to the server');
-        };
+        function joinRoom() {
+            username = document.getElementById('username').value;
+            room = document.getElementById('room').value;
+            
+            if (username && room) {
+                document.getElementById('login').style.display = 'none';
+                document.getElementById('chat').style.display = 'block';
+                document.getElementById('roomName').textContent = `Room: ${room}`;
+                connectWebSocket();
+            } else {
+                alert('Please enter both a name and room');
+            }
+        }
 
-        ws.onmessage = (event) => {
-            const messagesDiv = document.getElementById('messages');
-            const message = document.createElement('div');
+        function connectWebSocket() {
+            ws = new WebSocket('wss://express-ws-chat.onrender.com');
 
-            // Convert Blob to text
-            const reader = new FileReader();
-            reader.onload = () => {
-                message.textContent = reader.result;
+            ws.onopen = () => {
+                console.log('Connected to the server');
+                ws.send(JSON.stringify({ type: 'join', name: username, room }));
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                const messagesDiv = document.getElementById('messages');
+                const message = document.createElement('div');
+                message.textContent = data.message;
                 messagesDiv.appendChild(message);
             };
-            reader.readAsText(event.data);
-        };
 
-        ws.onclose = () => {
-            console.log('Disconnected from the server');
-        };
+            ws.onclose = () => {
+                console.log('Disconnected from the server');
+                attemptReconnect();
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        function attemptReconnect() {
+            setTimeout(() => {
+                console.log('Attempting to reconnect...');
+                connectWebSocket();
+            }, 2000); // Reconnect after 2 seconds
+        }
 
         function sendMessage() {
             const input = document.getElementById('messageInput');
             const message = input.value;
 
-            // Display the sent message
-            const messagesDiv = document.getElementById('messages');
-            const sentMessage = document.createElement('div');
-            sentMessage.textContent = `You: ${message}`;
-            messagesDiv.appendChild(sentMessage);
-
-            ws.send(message);
-            input.value = '';
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'message', name: username, room, message }));
+                input.value = '';
+            } else {
+                alert('Connection is not open');
+            }
         }
     </script>
 </body>
