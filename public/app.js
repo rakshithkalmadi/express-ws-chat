@@ -7,7 +7,8 @@ const messagesDiv = document.getElementById('messages');
 let peerConnection;
 let dataChannel;
 let room;
-const signalingServer = new WebSocket(`ws://${window.location.host}`);
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const signalingServer = new WebSocket(`${protocol}//${window.location.host}`);
 
 joinButton.addEventListener('click', () => {
     room = roomInput.value;
