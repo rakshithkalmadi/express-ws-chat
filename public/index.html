@@ -29,6 +29,9 @@
         #typingIndicator {
             display: none;
         }
+        #activeUsers {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -40,6 +43,7 @@
     </div>
     <div id="chat" style="display:none;">
         <h2 id="roomName"></h2>
+        <div id="activeUsers"><strong>Active users:</strong> <span id="userList"></span></div>
         <div id="messages"></div>
         <input type="text" id="messageInput" placeholder="Type a message..." oninput="showTyping()">
         <button onclick="sendMessage()">Send</button>
@@ -91,6 +95,8 @@
                     }, 3000);
                 } else if (data.privateMessage) {
                     displayPrivateMessage(data);
+                } else if (data.type === 'activeUsers') {
+                    displayActiveUsers(data.users);
                 } else {
                     displayMessage(data);
                 }
@@ -140,8 +146,9 @@
         function displayMessage(data) {
             const messagesDiv = document.getElementById('messages');
             const message = document.createElement('div');
-            message.classList.add('message');
-            message.textContent = `${formatTime(data.time)} - ${data.name}: ${data.message}`;
+            message.className = 'message';
+            const time = new Date(data.time).toLocaleTimeString();
+            message.textContent = `[${time}] ${data.name}: ${data.message}`;
             messagesDiv.appendChild(message);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
@@ -149,20 +156,19 @@
         function displayPrivateMessage(data) {
             const messagesDiv = document.getElementById('messages');
             const message = document.createElement('div');
-            message.classList.add('message');
-            message.style.color = 'green';
-            message.textContent = `Private from ${data.name}: ${data.privateMessage}`;
+            message.className = 'message private';
+            const time = new Date(data.time).toLocaleTimeString();
+            message.textContent = `[Private from ${data.name} at ${time}]: ${data.privateMessage}`;
             messagesDiv.appendChild(message);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
-        function formatTime(timestamp) {
-            const date = new Date(timestamp);
-            return date.toLocaleTimeString();
-        }
-
         function showTyping() {
             ws.send(JSON.stringify({ type: 'typing', name: username, room }));
+        }
+
+        function displayActiveUsers(users) {
+            document.getElementById('userList').textContent = users.join(', ');
         }
     </script>
 </body>

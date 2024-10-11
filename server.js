@@ -31,8 +31,11 @@ wss.on('connection', (ws) => {
                 ws.send(JSON.stringify({ type: 'history', messages: roomMessages[room] }));
             }
 
-            // Notify the room that user has joined
+            // Notify room that user has joined
             broadcast(ws, { name: 'Server', message: `${name} has joined the room`, time: Date.now() }, room);
+
+            // Send the updated list of active users in the room
+            broadcastUserList(room);
 
         } else if (type === 'message') {
             const msgObj = { name, message, time: Date.now() };
@@ -58,6 +61,9 @@ wss.on('connection', (ws) => {
             rooms[ws.room] = rooms[ws.room].filter(client => client !== ws);
             // Notify the room that the user has left
             broadcast(ws, { name: 'Server', message: `${ws.name} has left the room`, time: Date.now() }, ws.room);
+
+            // Send the updated list of active users in the room
+            broadcastUserList(ws.room);
         }
     });
 });
@@ -83,6 +89,16 @@ function broadcast(sender, data, room) {
             }
         });
     }
+}
+
+// Broadcast the list of active users in the room
+function broadcastUserList(room) {
+    const activeUsers = rooms[room]?.map(client => client.name) || [];
+    rooms[room]?.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({ type: 'activeUsers', users: activeUsers }));
+        }
+    });
 }
 
 app.use(express.static(path.join(__dirname, 'public')));
