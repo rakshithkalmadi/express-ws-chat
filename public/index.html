@@ -4,6 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebSocket Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        #chat {
+            margin-top: 20px;
+        }
+        #messages {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 200px;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+        }
+        .message {
+            margin: 5px 0;
+        }
+        .typing {
+            font-style: italic;
+            color: gray;
+        }
+        #typingIndicator {
+            display: none;
+        }
+    </style>
 </head>
 <body>
     <h1>WebSocket Chat</h1>
@@ -15,18 +41,23 @@
     <div id="chat" style="display:none;">
         <h2 id="roomName"></h2>
         <div id="messages"></div>
-        <input type="text" id="messageInput" placeholder="Type a message...">
+        <input type="text" id="messageInput" placeholder="Type a message..." oninput="showTyping()">
         <button onclick="sendMessage()">Send</button>
+        <div id="typingIndicator" class="typing"></div>
+        <input type="text" id="targetUsername" placeholder="Send private message to...">
+        <input type="text" id="privateMessageInput" placeholder="Type private message...">
+        <button onclick="sendPrivateMessage()">Send Private Message</button>
     </div>
 
     <script>
         let ws;
         let username, room;
+        let typingTimeout;
 
         function joinRoom() {
             username = document.getElementById('username').value;
             room = document.getElementById('room').value;
-            
+
             if (username && room) {
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('chat').style.display = 'block';
@@ -47,10 +78,22 @@
 
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-                const messagesDiv = document.getElementById('messages');
-                const message = document.createElement('div');
-                message.textContent = data.message;
-                messagesDiv.appendChild(message);
+
+                if (data.type === 'history') {
+                    // Display previous messages
+                    data.messages.forEach(message => displayMessage(message));
+                } else if (data.typing) {
+                    document.getElementById('typingIndicator').textContent = `${data.name} is typing...`;
+                    document.getElementById('typingIndicator').style.display = 'block';
+                    clearTimeout(typingTimeout);
+                    typingTimeout = setTimeout(() => {
+                        document.getElementById('typingIndicator').style.display = 'none';
+                    }, 3000);
+                } else if (data.privateMessage) {
+                    displayPrivateMessage(data);
+                } else {
+                    displayMessage(data);
+                }
             };
 
             ws.onclose = () => {
@@ -80,6 +123,46 @@
             } else {
                 alert('Connection is not open');
             }
+        }
+
+        function sendPrivateMessage() {
+            const target = document.getElementById('targetUsername').value;
+            const message = document.getElementById('privateMessageInput').value;
+
+            if (target && message && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'privateMessage', name: username, room, target, privateMessage: message }));
+                document.getElementById('privateMessageInput').value = '';
+            } else {
+                alert('Please enter a target username and message');
+            }
+        }
+
+        function displayMessage(data) {
+            const messagesDiv = document.getElementById('messages');
+            const message = document.createElement('div');
+            message.classList.add('message');
+            message.textContent = `${formatTime(data.time)} - ${data.name}: ${data.message}`;
+            messagesDiv.appendChild(message);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function displayPrivateMessage(data) {
+            const messagesDiv = document.getElementById('messages');
+            const message = document.createElement('div');
+            message.classList.add('message');
+            message.style.color = 'green';
+            message.textContent = `Private from ${data.name}: ${data.privateMessage}`;
+            messagesDiv.appendChild(message);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString();
+        }
+
+        function showTyping() {
+            ws.send(JSON.stringify({ type: 'typing', name: username, room }));
         }
     </script>
 </body>
