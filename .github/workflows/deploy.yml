@@ -1,0 +1,19 @@
+name: Node.js Package
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Deploy to Render
+      run: |
+        curl -X POST "https://api.render.com/deploy/srv-crojsrd6l47c73fok2f0?key=ZdvUv44kX6c"
